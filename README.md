@@ -8,7 +8,7 @@ Keep this submodule's asset contract in sync with both consumers.
 ![Assets](https://img.shields.io/badge/Asset%20Library-PNG%20Sprites-important)
 ![Organization](https://img.shields.io/badge/Organized-By%20Category-blueviolet)
 ![Format](https://img.shields.io/badge/Format-PNG%20%2B%20Spritesheets-9cf)
-![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)
+![License](https://img.shields.io/badge/License-CC0%201.0-lightgrey.svg)
 
 ## Table of Contents
 
