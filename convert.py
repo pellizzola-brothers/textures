@@ -1,3 +1,5 @@
+# Helper utility to transform individual sprites into spritesheets.
+
 from PIL import Image
 from os import walk, listdir, path
 
