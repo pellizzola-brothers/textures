@@ -1,5 +1,5 @@
 from PIL import Image
-from os import walk, path
+from os import walk, listdir, path
 
 SHEETS = "sheets/"
 
@@ -8,13 +8,27 @@ blocks = ["blocks/"]
 entities = ["enemies/", "interactives/", "characters/plant/"]
 
 
+def images(folder):
+    found = []
+    for root, dirs, files in sorted(walk(folder)):
+        for file in sorted(files):
+            if file.endswith(".png"):
+                found.append(Image.open(path.join(root, file)).convert("RGBA"))
+    return found
+
+
+def rows_of(folder):
+    entries = [entry for entry in listdir(folder) if not entry.startswith(".")]
+    if entries and all(path.isdir(path.join(folder, entry)) for entry in entries):
+        return [images(path.join(folder, entry)) for entry in sorted(entries)]
+    return [images(folder)]
+
+
 def sheet(folders, name):
     rows = []
     for folder in folders:
-        for root, dirs, files in sorted(walk(folder)):
-            row = [Image.open(path.join(root, file)).convert("RGBA") for file in sorted(files) if file.endswith(".png")]
-            if row:
-                rows.append(row)
+        rows += rows_of(folder)
+    rows = [row for row in rows if row]
 
     width = max(sum(image.width for image in row) for row in rows)
     height = sum(max(image.height for image in row) for row in rows)
