@@ -1,6 +1,6 @@
 # 🎨 Pellizzola Brothers (textures & sprites)
 
-**Asset library for the Pellizzola Brothers platformer game and level editor.** Contains all block sprites, enemy sprites, interactive items, character designs, backdrops, UI elements, and icons used across the game and editor.
+**Asset library for the Pellizzola Brothers platformer game and level editor.** Contains all block sprites, enemy sprites, interactive items, character designs, backdrops, UI elements used across the game and editor.
 
 This is a **Git submodule** maintained separately and imported by both the [level editor](https://github.com/pellizzola-brothers/studio) and the [game engine](https://github.com/pellizzola-brothers/game). <br>
 Keep this submodule's asset contract in sync with both consumers.
@@ -33,13 +33,12 @@ Keep this submodule's asset contract in sync with both consumers.
 ```
 textures/
 ├── blocks/              Block sprites, 00.png to 11.png, in column order
-├── Interactives/        Collectibles (pizza, coins, soda, stars)
 ├── enemies/             Enemy & hazard sprites
+├── interactives/        Collectibles (pizza, coin, energy drink)
 ├── characters/          Player & NPC sprites
 ├── backdrops/           Scene background images
-├── icons/               UI icons & buttons
 ├── ui/                  UI panels, HUD elements
-├── sheets/blocks.png    Spritesheet: all blocks in column order (CRITICAL)
+├── sheets/              Spritesheets the game reads: blocks, entities, player
 └── README.md            This file
 ```
 
@@ -75,60 +74,57 @@ The start, diamond, silver and cloud blocks were removed in the restructure, and
 
 ### Interactives (Collectibles)
 
-**Location:** `Interactives/` directory (note the capital I)
+**Location:** `interactives/` directory
 
-Passthrough collectible items that players can pick up:
+Collectibles are entities, not block tiles: they are dragged into place like an enemy and each runs an `_item` script. Each one is a directory of frames, `00.png` being the idle one:
 
-| Tile ID | Name | File | Effect |
-|---------|------|------|--------|
-| 43 | Pizza | `pizza.png` | Health/points |
-| 44 | Pellizzola Coin | `coin.png` | Currency/collectible |
-| 45 | Soda Can | `soda.png` | Stamina/boost |
-| 46 | Star | `star.png` | Rare collectible |
+| Definition | Folder | Script | Effect |
+|------------|--------|--------|--------|
+| `pizza` | `interactives/pizza/` | `pizza_item` | Health/points |
+| `coin` | `interactives/coin/` | `coin_item` | Currency/collectible |
+| `soda` | `interactives/energy_drink/` | `soda_item` | Stamina/boost |
+
+Levels written before the change stored these as block ids 43–45, and the studio converts them on open. Those ids stay reserved and must not be given to a block. The star (46) was removed with its sprite.
 
 ### Enemies
 
 **Location:** `enemies/` directory
 
-Hazardous entities that damage the player (Tile IDs ≥ 50):
+Hazardous entities that damage the player, each a directory of frames. Like the interactives, they are named by definition, not by number:
 
-| Tile ID | Name | File | Behavior |
-|---------|------|------|----------|
-| 50 | Chapeleira | `chapeleira.png` | Floating witch-like enemy |
-| 51 | Abú | `abu.png` | Jumping monkey enemy |
-| 52 | Gombacrack | `gombacrack.png` | Fungal enemy |
-| 53 | Pranta | `pranta.png` | Plant-like enemy |
-| 54 | Pinguim | `pinguim.png` | Sliding penguin enemy |
-| 55 | Bullet | `bullet.png` | Projectile hazard |
+| Definition | Folder | Script | Behavior |
+|------------|--------|--------|----------|
+| `chapeleira` | `enemies/chapeleira/` | `chapeleira_ai` | Floating witch-like enemy |
+| `abu` | `enemies/erick/` | `abu_ai` | Jumping monkey enemy |
+| `pranta` | `enemies/pranta/` | `pranta_ai` | Plant-like enemy |
+| `pinguim` | `enemies/tux/` | `pinguim_ai` | Sliding penguin enemy |
+| `bullet` | `enemies/bullet/` | `bullet_ai` | Projectile hazard |
+
+The gombacrack sprites were removed from the library.
 
 ### Characters
 
 **Location:** `characters/` directory
 
-Playable and NPC character sprites (idle, walk, jump, etc.). Used by the game engine during play.
+Playable and NPC character sprites, each a directory of frames. `characters/pellizzola/` is the player (`sheets/player.png`). Used by the game engine during play.
 
 ### Backdrops
 
 **Location:** `backdrops/` directory
 
-Full-screen or full-height scene backgrounds. Each backdrop is referenced by a string ID in level data:
+Full-screen or full-height scene backgrounds. The level schema allows only three presets, `foo`, `bar` and `baz`, which `BGS` in `studio/catalog.js` maps onto the art:
 
-| ID | File | Theme |
-|----|------|-------|
-| `dark` | `dark.png` | Default dark background |
-| `sky` | `sky.png` | Blue sky theme |
-| *(others)* | *(as added)* | *(theme-specific)* |
+| Preset | File | Notes |
+|--------|------|-------|
+| `foo`, `bar`, `baz` | `backdrops/00.png` | All three share the one backdrop the library ships |
 
-Backdrops are **per-scene** — each of the 9 scenes in a level can have a different backdrop.
+The schema gives a level one backdrop for all its scenes. Per-scene backdrops need a schema change first.
 
 ### UI & Icons
 
-**Location:** `icons/` and `ui/` directories
+**Location:** `ui/` directory
 
-- `icons/` — Small UI icons (buttons, status indicators, category markers)
-- `ui/` — Larger UI elements (panels, HUD frames, menus)
-
-Used by both the level editor and the game's front-end UI.
+Larger UI elements (menus, win and lose scenes). Used by the game's front-end UI.
 
 ---
 
@@ -137,19 +133,19 @@ Used by both the level editor and the game's front-end UI.
 Follow these rules when adding new assets:
 
 ### File Naming
-- **Lowercase with underscores**: `arrow_sign.png`, `excla_block.png`
+- **Lowercase with underscores**: `energy_drink/`, `main_menu.png`
 - **No spaces or special chars** (except underscore)
 - **Descriptive**: `frozen_floor.png` is clear; `ff.png` is not
-- **Variant suffix**: `excla_block.png`, `frozen_excla_block.png`, `ice_excla_block.png`
+- **Frames**: `00.png`, `01.png`, … in walk order, so `00.png` is the idle frame
 
 ### Directory Organization
 - **Category folders:**
-  - `blocks/` — structural tiles
-  - `Interactives/` — collectibles (keep the capital I for consistency)
+  - `blocks/` — structural tiles, numbered in column order
+  - `interactives/` — collectibles
   - `enemies/` — hazards and enemies
   - `characters/` — player and NPCs
   - `backdrops/` — scenes
-  - `icons/`, `ui/` — interface elements
+  - `ui/` — interface elements
 
 ### Spritesheet Column Order
 - Block files are numbered `NN.png` in column order, so a new block takes the next free number
@@ -204,19 +200,19 @@ The game compiles block metadata from `blocks.c`/`blocks.h`, which must match th
 
 ### Adding a New Enemy or Collectible
 
-Follow the same process as a new block, but:
-- Place the sprite in `enemies/` or `Interactives/`
-- Use the reserved ID ranges (43–46 for collectibles, ≥ 50 for enemies)
-- Update both `studio/catalog.js` and the game's entity system
+1. **Create a folder** in `enemies/` or `interactives/` with its frames as `00.png`, `01.png`, …
+2. **Rebuild `sheets/entities.png`** with `convert.py`. It packs folders in alphabetical order, so a new folder shifts the rows after it. Then run `npm run map_animations` in `studio/`.
+3. **Update `ENTS` or `ITEMS`** in `studio/catalog.js` (id, script, file, sheet, row, frame).
+4. **Update the game's entity table.** The script name must match the game's: `*_ai` for enemies, `*_item` for collectibles.
 
 ### Adding a New Backdrop
 
-1. **Create a full-screen PNG** (recommended: 1080×720 px or higher, landscape)
-2. **Place it in `backdrops/`** with a descriptive lowercase name (`new_sky.png`)
-3. **Register it in `studio/script.js`**:
-   - Add an entry to the `BACKGROUNDS` constant (string ID, e.g. `"new_sky"`)
-   - Add the path to `SPRITE_PATHS`
-4. **Test**: Open the level editor, create a new scene, and verify the backdrop appears in the dropdown
+The level schema allows only the presets `foo`, `bar` and `baz`, so a new backdrop is a schema change. Coordinate it across the game, the website and the studio first, then:
+
+1. **Place the PNG** in `backdrops/` (see Backdrop Format)
+2. **Map the new preset** to it in `BGS` in `studio/catalog.js`
+
+---
 
 ---
 
@@ -225,7 +221,7 @@ Follow the same process as a new block, but:
 ### Sprite Format
 - **Format:** PNG with transparency (RGBA)
 - **Color depth:** 8-bit indexed or 32-bit full color (transparency channel required)
-- **Dimensions:** 32×32 px for blocks/enemies, 48×48 px for characters (use consistent sizes within categories)
+- **Dimensions:** 32×32 px for blocks and most entities (`erick`'s frames are 64×64). Each sheet row's `frame` in `studio/catalog.js` gives its size.
 - **Compression:** PNG, lossless — no JPG
 - **Background:** Transparent (0 alpha for empty areas)
 
@@ -263,7 +259,7 @@ Contributions welcome! When adding or updating assets:
    - Provide clear, opaque backgrounds (or transparent where appropriate)
 
 2. **Documentation:**
-   - Update this README's asset inventory if adding a new category or tile ID
+   - Update this README's asset inventory if adding a new category or block ID
    - Include a commit message explaining the asset's purpose and block ID
    - Reference related updates in `studio/catalog.js` or `game/blocks.{c,h}`
 
