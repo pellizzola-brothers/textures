@@ -15,6 +15,7 @@ def images(folder):
     for root, dirs, files in sorted(walk(folder)):
         for file in sorted(files):
             if file.endswith(".png"):
+                if "erick" in path.join(root, file): continue
                 found.append(Image.open(path.join(root, file)).convert("RGBA"))
     return found
 
