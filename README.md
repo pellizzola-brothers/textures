@@ -32,14 +32,14 @@ Keep this submodule's asset contract in sync with both consumers.
 
 ```
 textures/
-├── blocks/              Block/tile sprites (structural elements)
+├── blocks/              Block sprites, 00.png to 11.png, in column order
 ├── Interactives/        Collectibles (pizza, coins, soda, stars)
 ├── enemies/             Enemy & hazard sprites
 ├── characters/          Player & NPC sprites
 ├── backdrops/           Scene background images
 ├── icons/               UI icons & buttons
 ├── ui/                  UI panels, HUD elements
-├── block_sheet.png      Spritesheet: all blocks in column order (CRITICAL)
+├── sheets/blocks.png    Spritesheet: all blocks in column order (CRITICAL)
 └── README.md            This file
 ```
 
@@ -47,36 +47,31 @@ textures/
 
 ### Blocks (Structural)
 
-**Location:** `blocks/` directory  
-**Spritesheet:** `block_sheet.png` (critical — column order is the game contract)
+**Location:** `blocks/` directory
+**Spritesheet:** `sheets/blocks.png` (critical — column order is the contract)
 
-Structural tiles placed by the level editor and rendered by the game. The `block_sheet.png` file is a **spritesheet where the column order defines tile IDs**:
+Structural tiles placed by the level editor and rendered by the game. `blocks/` holds one PNG per block, numbered in column order. `sheets/blocks.png` packs them left to right into one 32 px row, and the column order defines block IDs. An ID is the block's column plus one, because `000` is air:
 
-| Tile ID | Name | File | Notes |
-|---------|------|------|-------|
-| 1 | START (Green Flag) | `start.png` | Unique spawn point per level |
-| 4 | END (Red Flag) | `end.png` | Unique goal per level |
-| 2 | Brick | `brick.png` | Basic solid block |
-| 3 | Excla-Block | `excla_block.png` | Destructible block |
-| 5 | Arrow Sign | `arrow_sign.png` | Passthrough directional sign |
-| 6 | Bronze Block | `bronze.png` | Metallic solid block |
-| 7 | Cement Block | `cement.png` | Heavy solid block |
-| 8 | Diamond Block | `diamond.png` | Shiny decorative block |
-| 9 | Esponja (Sponge) | `esponja.png` | Soft block |
-| 10 | Floor | `floor.png` | Horizontal surface |
-| 11 | Frozen Excla-Block | `frozen_excla_block.png` | Ice variant |
-| 12 | Frozen Floor | `frozen_floor.png` | Ice variant |
-| 13 | Gold Block | `gold.png` | Precious block |
-| 14 | Ice Excla-Block | `ice_excla_block.png` | Icy destructible |
-| 15 | Ice Floor | `ice_floor.png` | Icy surface |
-| 16 | Note Block | `note_block.png` | Musical/bouncy block |
-| 17 | Sand Block | `sand.png` | Desert theme |
-| 18 | Silver Block | `silver.png` | Metallic solid block |
-| 19 | Cloud Block | `cloud.png` | Sky theme block |
+| Block ID | Name | File | Notes |
+|----------|------|------|-------|
+| 1 | Brick | `blocks/00.png` | Basic solid block |
+| 2 | Floor Block | `blocks/01.png` | Horizontal surface |
+| 3 | Ice Floor Block | `blocks/02.png` | Icy surface |
+| 4 | Exclamation Block | `blocks/03.png` | Destructible block |
+| 5 | Arrow Sign | `blocks/04.png` | Passthrough directional sign |
+| 6 | Sponge | `blocks/05.png` | Soft block |
+| 7 | Gravel | `blocks/06.png` | Heavy solid block |
+| 8 | Frozen Floor Block | `blocks/07.png` | Ice variant |
+| 9 | Ice Exclamation Block | `blocks/08.png` | Icy destructible |
+| 10 | Note Block | `blocks/09.png` | Musical/bouncy block |
+| 11 | Sand | `blocks/10.png` | Desert theme |
+| 12 | End Sign | `blocks/11.png` | Unique goal block, one per level |
 
-**⚠️ CRITICAL:** The `block_sheet.png` spritesheet column order **is the contract** between this asset library, the level editor, and the game. Changing the column order requires coordinating updates to:
-- `studio/script.js` — `BLOCK_REGISTRY`, `SPRITE_PATHS`
-- `game/blocks.c` and `game/blocks.h` — tile ID mappings
+The start, diamond, silver and cloud blocks were removed in the restructure, and the lucky, gold and bronze blocks were removed before it.
+
+**⚠️ CRITICAL:** The column order of `sheets/blocks.png` **is the contract** between this asset library, the level editor and the game. Changing it requires coordinating updates to:
+- `studio/catalog.js` — `BLOCKS`, `ENDTILE`
+- `game/blocks.c` and `game/blocks.h` — block ID mappings
 
 ### Interactives (Collectibles)
 
@@ -148,7 +143,7 @@ Follow these rules when adding new assets:
 - **Variant suffix**: `excla_block.png`, `frozen_excla_block.png`, `ice_excla_block.png`
 
 ### Directory Organization
-- **Category folders** match the editor's `BLOCK_REGISTRY` categories:
+- **Category folders:**
   - `blocks/` — structural tiles
   - `Interactives/` — collectibles (keep the capital I for consistency)
   - `enemies/` — hazards and enemies
@@ -157,35 +152,29 @@ Follow these rules when adding new assets:
   - `icons/`, `ui/` — interface elements
 
 ### Spritesheet Column Order
-- When updating `block_sheet.png`, maintain **alphabetical order by category** (as documented in the Asset Inventory above)
+- Block files are numbered `NN.png` in column order, so a new block takes the next free number
 - **Never insert a column in the middle** — always append new blocks at the end or rebuild the entire sheet
-- **Document the change** in a commit message referencing both `studio/script.js` and `game/blocks.{c,h}`
+- **Document the change** in a commit message referencing `studio/catalog.js` and `game/blocks.{c,h}`
 
 ---
 
 ## Integration with Game & Editor
 
-### Level Editor (`studio/script.js`)
+### Level Editor (`studio/catalog.js`)
 
-The editor loads sprites at startup via `loadSprites()`:
+The editor reads `BLOCKS` in `studio/catalog.js` to map block IDs to the files in `blocks/`, and draws each block from its own file. On startup it checks that `sheets/blocks.png` is one row of 12 columns, and warns if it is not as wide as `BLOCKS` is long.
 
-1. **Attempts to load** PNG files from this directory
-2. **Falls back to colored rectangles** if an image fails to load
-3. **References `BLOCK_REGISTRY`** to map tile IDs to file paths in `SPRITE_PATHS`
-
-When you add a new block sprite:
-- Add the file to the appropriate folder in this directory
-- Update `studio/script.js`:
-  - Add entry to `BLOCK_REGISTRY` (id, name, category, description)
-  - Add path to `SPRITE_PATHS` (id → folder/filename)
-  - Add fallback color to `TILE_COLORS`
+When you add a new block:
+- Add the file to `blocks/` and its column to `sheets/blocks.png`
+- Add an entry to `BLOCKS` in `studio/catalog.js` (id, name, file)
+- Update `ENDTILE` only if the new block is the goal
 
 ### Game Engine (`game/`)
 
-The game compiles block metadata from `blocks.c`/`blocks.h`, which must match this submodule's tile IDs. When adding a block:
+The game compiles block metadata from `blocks.c`/`blocks.h`, which must match this submodule's block IDs. When adding a block:
 - Add the sprite PNG to this submodule
-- Update the game's tile ID enum and asset loader
-- **Coordinate the update across both repos** — they must agree on tile IDs
+- Update the game's block ID enum and asset loader
+- **Coordinate the update across both repos** — they must agree on block IDs
 
 ---
 
@@ -194,27 +183,18 @@ The game compiles block metadata from `blocks.c`/`blocks.h`, which must match th
 ### Adding a New Block Tile
 
 1. **Create the PNG sprite** (recommended: 32×32 px, transparent background)
-2. **Place it in `blocks/`** with a descriptive lowercase name (`new_block.png`)
-3. **Update `block_sheet.png`**:
+2. **Place it in `blocks/`** with the next number (`12.png`)
+3. **Update `sheets/blocks.png`**:
    - Open in an image editor (Photoshop, GIMP, Aseprite)
    - Append the new sprite as a new column (maintain row height)
    - Save as PNG (8-bit or 32-bit with transparency)
-4. **Assign a tile ID**:
-   - If it's a structural block, use the next available ID in the 2–19 range
-   - If it's a collectible, use 43–46
-   - If it's an enemy, use ≥ 50
-5. **Update `studio/script.js`**:
+4. **Assign a block ID**: the number plus one (`12.png` is `13`)
+5. **Update `studio/catalog.js`**:
    ```javascript
-   // In BLOCK_REGISTRY:
-   { id: 20, name: "New Block", category: "estrutura", description: "...", ... }
-   
-   // In SPRITE_PATHS:
-   20: "blocks/new_block.png",
-   
-   // In TILE_COLORS:
-   20: "#ff00ff", // fallback color
+   // In BLOCKS:
+   {id: 13, name: 'new block', file: 'blocks/12.png'},
    ```
-6. **Update `game/blocks.c` and `game/blocks.h`** to include the new tile ID
+6. **Update `game/blocks.c` and `game/blocks.h`** to include the new block ID
 7. **Test**:
    - Open the level editor (`npm start` in `studio/`)
    - Verify the new block appears in the palette
@@ -227,7 +207,7 @@ The game compiles block metadata from `blocks.c`/`blocks.h`, which must match th
 Follow the same process as a new block, but:
 - Place the sprite in `enemies/` or `Interactives/`
 - Use the reserved ID ranges (43–46 for collectibles, ≥ 50 for enemies)
-- Update both `BLOCK_REGISTRY` and the game's entity system
+- Update both `studio/catalog.js` and the game's entity system
 
 ### Adding a New Backdrop
 
@@ -249,13 +229,13 @@ Follow the same process as a new block, but:
 - **Compression:** PNG, lossless — no JPG
 - **Background:** Transparent (0 alpha for empty areas)
 
-### Spritesheet Format (`block_sheet.png`)
+### Spritesheet Format (`sheets/blocks.png`)
 - **Format:** PNG with transparency
-- **Layout:** Single row or grid, depending on total blocks
+- **Layout:** Single row, one column per block
 - **Column width:** 32 px per block
 - **Row height:** 32 px
 - **Spacing:** 0 px (no gaps between columns)
-- **Order:** Matches the tile ID order documented above
+- **Order:** Column N holds `blocks/(N-1).png`, so block ID = column + 1
 
 ### Backdrop Format
 - **Format:** PNG (transparency optional)
@@ -267,8 +247,8 @@ Follow the same process as a new block, but:
 
 ## Known Limitations
 
-- **Spritesheet brittleness:** Inserting a column in the middle of `block_sheet.png` shifts all subsequent tile IDs. Always append or rebuild the entire sheet.
-- **No automatic detection:** Adding a file to this directory doesn't automatically register it in the editor or game — both consumers require explicit updates to `BLOCK_REGISTRY` and tile ID mappings.
+- **Spritesheet brittleness:** Inserting a column in the middle of `sheets/blocks.png` shifts all subsequent block IDs. Always append or rebuild the entire sheet.
+- **No automatic detection:** Adding a file to this directory doesn't automatically register it in the editor or game — both consumers require explicit updates to `studio/catalog.js` and block ID mappings.
 - **Single character tileset:** The game uses a fixed spritesheet for player and NPC animations — replacing character sprites requires coordination with the game engine.
 
 ---
@@ -284,8 +264,8 @@ Contributions welcome! When adding or updating assets:
 
 2. **Documentation:**
    - Update this README's asset inventory if adding a new category or tile ID
-   - Include a commit message explaining the asset's purpose and tile ID
-   - Reference related updates in `studio/script.js` or `game/blocks.{c,h}`
+   - Include a commit message explaining the asset's purpose and block ID
+   - Reference related updates in `studio/catalog.js` or `game/blocks.{c,h}`
 
 3. **Testing:**
    - Verify new sprites load in the level editor (fallback to colored rectangle if missing)
@@ -293,7 +273,7 @@ Contributions welcome! When adding or updating assets:
    - Confirm round-trip: place in editor → save → open in editor → play in game
 
 4. **Coordination:**
-   - If changing tile IDs or the spritesheet, update **both** `studio/` and `game/` subprojects
+   - If changing block IDs or the spritesheet, update **both** `studio/` and `game/` subprojects
    - Open issues or PRs to both repos if coordinating larger asset overhauls
 
 ---
